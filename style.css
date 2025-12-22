@@ -1,0 +1,92 @@
+body {
+    font-family: Arial, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 20px;
+    background-color: #f0f0f0;
+}
+
+h1 {
+    color: #333;
+}
+
+#game-status {
+    margin-bottom: 20px;
+    font-size: 1.2em;
+    font-weight: bold;
+}
+
+.ultimate-board {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    gap: 10px;
+    border: 5px solid #333;
+    padding: 10px;
+    background-color: #555;
+}
+
+.big-board {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    gap: 5px;
+    border: 2px solid #666;
+    background-color: #888;
+}
+
+.big-board.active {
+    border: 3px solid #00f; /* Highlight active board */
+    box-shadow: 0 0 15px rgba(0, 0, 255, 0.5);
+}
+
+.big-board.won-X {
+    background-color: rgba(0, 255, 0, 0.3); /* Green for X win */
+}
+
+.big-board.won-O {
+    background-color: rgba(255, 0, 0, 0.3); /* Red for O win */
+}
+
+.big-board.draw {
+    background-color: rgba(128, 128, 128, 0.3); /* Grey for draw */
+}
+
+
+.cell {
+    width: 60px;
+    height: 60px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 2em;
+    font-weight: bold;
+    background-color: #eee;
+    border: 1px solid #aaa;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.cell:hover {
+    background-color: #ddd;
+}
+
+.cell.occupied {
+    cursor: not-allowed;
+}
+
+.cell.x {
+    color: #00f;
+}
+
+.cell.o {
+    color: #f00;
+}
+
+#reset-button {
+    margin-top: 20px;
+    padding: 10px 20px;
+    font-size: 1em;
+    cursor: pointer;
+}
