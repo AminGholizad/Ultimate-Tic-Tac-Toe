@@ -43,15 +43,15 @@ h1 {
 }
 
 .big-board.won-X {
-    background-color: rgba(0, 255, 0, 0.3); /* Green for X win */
+    /* Style for X win is now handled by the overlay */
 }
 
 .big-board.won-O {
-    background-color: rgba(255, 0, 0, 0.3); /* Red for O win */
+    /* Style for O win is now handled by the overlay */
 }
 
 .big-board.draw {
-    background-color: rgba(128, 128, 128, 0.3); /* Grey for draw */
+    /* Style for draw is now handled by the overlay */
 }
 
 .winner-overlay {
@@ -65,11 +65,26 @@ h1 {
     align-items: center;
     font-size: 4em;
     font-weight: bold;
-    color: white;
-    text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
     z-index: 10;
     pointer-events: none; /* Make it non-interactive */
 }
+
+.big-board.won-X .winner-overlay {
+    color: #00f; /* Blue 'X' */
+    background-color: rgba(0, 255, 0, 0.3); /* Green transparent background */
+}
+
+.big-board.won-O .winner-overlay {
+    color: #f00; /* Red 'O' */
+    background-color: rgba(255, 0, 0, 0.3); /* Red transparent background */
+}
+
+.big-board.draw .winner-overlay {
+    color: white;
+    background-color: rgba(128, 128, 128, 0.4); /* Grey transparent background */
+}
+
 
 .cell {
     width: 60px;
