@@ -29,24 +29,7 @@ function renderBoard() {
             bigBoardElement.dataset.bigRow = bigRow;
             bigBoardElement.dataset.bigCol = bigCol;
 
-            if (bigBoardWins[bigRow][bigCol]) {
-                bigBoardElement.classList.add(bigBoardWins[bigRow][bigCol] === 'draw' ? 'draw' : `won-${bigBoardWins[bigRow][bigCol]}`);
-                // If a small board is won/drawn, display the winner/draw status
-                const winnerOverlay = document.createElement('div');
-                winnerOverlay.classList.add('winner-overlay');
-                winnerOverlay.textContent = bigBoardWins[bigRow][bigCol] === 'draw' ? 'DRAW' : bigBoardWins[bigRow][bigCol];
-                bigBoardElement.appendChild(winnerOverlay);
-            }
-
-
-            if (activeBigBoard && activeBigBoard[0] === bigRow && activeBigBoard[1] === bigCol) {
-                bigBoardElement.classList.add('active');
-            } else if (activeBigBoard === null && !bigBoardWins[bigRow][bigCol]) {
-                // If no active board is set (first move or sent to a completed board), all non-won boards are active
-                bigBoardElement.classList.add('active');
-            }
-
-
+            // Add cells first
             for (let smallRow = 0; smallRow < 3; smallRow++) {
                 for (let smallCol = 0; smallCol < 3; smallCol++) {
                     const cellElement = document.createElement('div');
@@ -61,11 +44,31 @@ function renderBoard() {
                         cellElement.textContent = cellValue;
                         cellElement.classList.add('occupied', cellValue.toLowerCase());
                     } else {
-                        cellElement.addEventListener('click', handleCellClick);
+                        // Only add click listener if the board is not already decided
+                        if (!bigBoardWins[bigRow][bigCol]) {
+                           cellElement.addEventListener('click', handleCellClick);
+                        }
                     }
                     bigBoardElement.appendChild(cellElement);
                 }
             }
+
+            // Now, add overlay if board is won/drawn
+            if (bigBoardWins[bigRow][bigCol]) {
+                bigBoardElement.classList.add(bigBoardWins[bigRow][bigCol] === 'draw' ? 'draw' : `won-${bigBoardWins[bigRow][bigCol]}`);
+                const winnerOverlay = document.createElement('div');
+                winnerOverlay.classList.add('winner-overlay');
+                winnerOverlay.textContent = bigBoardWins[bigRow][bigCol] === 'draw' ? 'D' : bigBoardWins[bigRow][bigCol];
+                bigBoardElement.appendChild(winnerOverlay);
+            }
+
+            if (activeBigBoard && activeBigBoard[0] === bigRow && activeBigBoard[1] === bigCol) {
+                bigBoardElement.classList.add('active');
+            } else if (activeBigBoard === null && !bigBoardWins[bigRow][bigCol]) {
+                // If no active board is set (first move or sent to a completed board), all non-won boards are active
+                bigBoardElement.classList.add('active');
+            }
+
             ultimateBoardElement.appendChild(bigBoardElement);
         }
     }
