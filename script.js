@@ -1,11 +1,13 @@
 const ultimateBoardElement = document.getElementById('ultimate-board');
 const gameStatusElement = document.getElementById('game-status');
 const resetButton = document.getElementById('reset-button');
+const undoButton = document.getElementById('undo-button');
 
 let currentPlayer = 'X';
 let ultimateBoard; // 3x3 array of small boards
 let activeBigBoard = null; // [row, col] of the currently active small board
 let bigBoardWins; // 3x3 array to track wins in small boards (null, 'X', 'O', 'draw')
+let history = [];
 
 function initializeGame() {
     ultimateBoard = Array(3).fill(null).map(() =>
@@ -16,6 +18,8 @@ function initializeGame() {
     bigBoardWins = Array(3).fill(null).map(() => Array(3).fill(null));
     currentPlayer = 'X';
     activeBigBoard = null; // No active board at the start, any move is allowed
+    history = [];
+    undoButton.disabled = true;
     gameStatusElement.textContent = `Player ${currentPlayer}'s Turn`;
     renderBoard();
 }
@@ -44,8 +48,8 @@ function renderBoard() {
                         cellElement.textContent = cellValue;
                         cellElement.classList.add('occupied', cellValue.toLowerCase());
                     } else {
-                        // Only add click listener if the board is not already decided
-                        if (!bigBoardWins[bigRow][bigCol]) {
+                        // Only add click listener if the board is not already decided and the game is not over
+                        if (!bigBoardWins[bigRow][bigCol] && !checkUltimateWin()) {
                            cellElement.addEventListener('click', handleCellClick);
                         }
                     }
@@ -64,7 +68,7 @@ function renderBoard() {
 
             if (activeBigBoard && activeBigBoard[0] === bigRow && activeBigBoard[1] === bigCol) {
                 bigBoardElement.classList.add('active');
-            } else if (activeBigBoard === null && !bigBoardWins[bigRow][bigCol]) {
+            } else if (activeBigBoard === null && !bigBoardWins[bigRow][bigCol] && !checkUltimateWin()) {
                 // If no active board is set (first move or sent to a completed board), all non-won boards are active
                 bigBoardElement.classList.add('active');
             }
@@ -83,23 +87,27 @@ function handleCellClick(event) {
 
     // Check if the clicked board is the active board
     if (activeBigBoard !== null && (br !== activeBigBoard[0] || bc !== activeBigBoard[1])) {
-        // If the active board is already won/drawn, any non-won board is fair game.
-        // Otherwise, only the active board is allowed.
         if (!bigBoardWins[activeBigBoard[0]][activeBigBoard[1]]) {
             alert("You must play in the active board!");
             return;
         }
     }
 
-    // Check if the cell is already occupied or the big board is already won/drawn
     if (ultimateBoard[br][bc][sr][sc] !== null || bigBoardWins[br][bc] !== null) {
         return;
     }
 
+    // Save current state for undo
+    history.push({
+        ultimateBoard: JSON.parse(JSON.stringify(ultimateBoard)),
+        currentPlayer: currentPlayer,
+        activeBigBoard: activeBigBoard,
+        bigBoardWins: JSON.parse(JSON.stringify(bigBoardWins))
+    });
+    undoButton.disabled = false;
+
+
     ultimateBoard[br][bc][sr][sc] = currentPlayer;
-    event.target.textContent = currentPlayer;
-    event.target.classList.add('occupied', currentPlayer.toLowerCase());
-    event.target.removeEventListener('click', handleCellClick);
 
     // Check for win/draw in the small board
     const smallBoardWinner = checkSmallBoardWin(br, bc);
@@ -111,21 +119,19 @@ function handleCellClick(event) {
 
     // Determine the next active big board
     if (bigBoardWins[sr][sc] !== null) {
-        // If the next target board is already won/drawn, the next player can play anywhere
         activeBigBoard = null;
     } else {
         activeBigBoard = [sr, sc];
     }
 
-
     // Check for win in the ultimate board
     const ultimateWinner = checkUltimateWin();
     if (ultimateWinner) {
         gameStatusElement.textContent = `Player ${ultimateWinner} wins the game!`;
-        disableAllCells();
+        undoButton.disabled = true; // No undo after game over
     } else if (checkUltimateDraw()) {
         gameStatusElement.textContent = "The game is a draw!";
-        disableAllCells();
+        undoButton.disabled = true; // No undo after game over
     } else {
         currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
         gameStatusElement.textContent = `Player ${currentPlayer}'s Turn`;
@@ -134,22 +140,28 @@ function handleCellClick(event) {
     renderBoard();
 }
 
+function handleUndoClick() {
+    if (history.length === 0) {
+        return;
+    }
+    const lastState = history.pop();
+    ultimateBoard = lastState.ultimateBoard;
+    currentPlayer = lastState.currentPlayer;
+    activeBigBoard = lastState.activeBigBoard;
+    bigBoardWins = lastState.bigBoardWins;
+
+    undoButton.disabled = history.length === 0;
+    gameStatusElement.textContent = `Player ${currentPlayer}'s Turn`;
+    renderBoard();
+}
+
 function checkSmallBoardWin(bigRow, bigCol) {
     const board = ultimateBoard[bigRow][bigCol];
     const lines = [
-        // Rows
-        [[0, 0], [0, 1], [0, 2]],
-        [[1, 0], [1, 1], [1, 2]],
-        [[2, 0], [2, 1], [2, 2]],
-        // Columns
-        [[0, 0], [1, 0], [2, 0]],
-        [[0, 1], [1, 1], [2, 1]],
-        [[0, 2], [1, 2], [2, 2]],
-        // Diagonals
-        [[0, 0], [1, 1], [2, 2]],
-        [[0, 2], [1, 1], [2, 0]]
+        [[0, 0], [0, 1], [0, 2]], [[1, 0], [1, 1], [1, 2]], [[2, 0], [2, 1], [2, 2]],
+        [[0, 0], [1, 0], [2, 0]], [[0, 1], [1, 1], [2, 1]], [[0, 2], [1, 2], [2, 2]],
+        [[0, 0], [1, 1], [2, 2]], [[0, 2], [1, 1], [2, 0]]
     ];
-
     for (const line of lines) {
         const [a, b, c] = line;
         if (board[a[0]][a[1]] && board[a[0]][a[1]] === board[b[0]][b[1]] && board[a[0]][a[1]] === board[c[0]][c[1]]) {
@@ -160,36 +172,27 @@ function checkSmallBoardWin(bigRow, bigCol) {
 }
 
 function checkSmallBoardDraw(bigRow, bigCol) {
-    const board = ultimateBoard[bigRow][bigCol];
     for (let r = 0; r < 3; r++) {
         for (let c = 0; c < 3; c++) {
-            if (board[r][c] === null) {
-                return false; // Still empty cells, not a draw yet
+            if (ultimateBoard[bigRow][bigCol][r][c] === null) {
+                return false;
             }
         }
     }
-    return checkSmallBoardWin(bigRow, bigCol) === null; // All cells filled, but no winner
+    return checkSmallBoardWin(bigRow, bigCol) === null;
 }
 
 function checkUltimateWin() {
     const lines = [
-        // Rows
-        [[0, 0], [0, 1], [0, 2]],
-        [[1, 0], [1, 1], [1, 2]],
-        [[2, 0], [2, 1], [2, 2]],
-        // Columns
-        [[0, 0], [1, 0], [2, 0]],
-        [[0, 1], [1, 1], [2, 1]],
-        [[0, 2], [1, 2], [2, 2]],
-        // Diagonals
-        [[0, 0], [1, 1], [2, 2]],
-        [[0, 2], [1, 1], [2, 0]]
+        [[0, 0], [0, 1], [0, 2]], [[1, 0], [1, 1], [1, 2]], [[2, 0], [2, 1], [2, 2]],
+        [[0, 0], [1, 0], [2, 0]], [[0, 1], [1, 1], [2, 1]], [[0, 2], [1, 2], [2, 2]],
+        [[0, 0], [1, 1], [2, 2]], [[0, 2], [1, 1], [2, 0]]
     ];
-
     for (const line of lines) {
         const [a, b, c] = line;
-        if (bigBoardWins[a[0]][a[1]] && bigBoardWins[a[0]][a[1]] === bigBoardWins[b[0]][b[1]] && bigBoardWins[a[0]][a[1]] === bigBoardWins[c[0]][c[1]]) {
-            return bigBoardWins[a[0]][a[1]];
+        const valA = bigBoardWins[a[0]][a[1]];
+        if (valA && valA !== 'draw' && valA === bigBoardWins[b[0]][b[1]] && valA === bigBoardWins[c[0]][c[1]]) {
+            return valA;
         }
     }
     return null;
@@ -199,22 +202,14 @@ function checkUltimateDraw() {
     for (let r = 0; r < 3; r++) {
         for (let c = 0; c < 3; c++) {
             if (bigBoardWins[r][c] === null) {
-                return false; // Still unwon big boards, not a draw yet
+                return false;
             }
         }
     }
-    return checkUltimateWin() === null; // All big boards won/drawn, but no ultimate winner
+    return checkUltimateWin() === null;
 }
-
-function disableAllCells() {
-    const cells = document.querySelectorAll('.cell');
-    cells.forEach(cell => {
-        cell.removeEventListener('click', handleCellClick);
-        cell.classList.add('occupied'); // Visually disable them
-    });
-}
-
 
 resetButton.addEventListener('click', initializeGame);
+undoButton.addEventListener('click', handleUndoClick);
 
 initializeGame();
